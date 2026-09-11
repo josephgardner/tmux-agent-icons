@@ -14,7 +14,7 @@ Requires tmux ≥ 3.2 (pane user options and `#{P:…}` format loops).
 ## Setup
 
 1. `cp tmux-claude-state.sh ~/.claude/hooks/ && chmod +x ~/.claude/hooks/tmux-claude-state.sh`
-2. Merge `claude-tmux-hooks.json` into `~/.claude/settings.json`. Every hook is the same script with the state as its only argument. `PostToolUse` matters: `PreToolUse` fires before the permission prompt, so without it an approved tool call would keep showing 🛎️ until the next event.
+2. Merge `claude-tmux-hooks.json` into `~/.claude/settings.json`. Every hook is the same script with the state as its only argument. `PostToolUse` matters: `PreToolUse` fires before the permission prompt, so without it an approved tool call would keep showing ✋ until the next event.
 3. Add to `~/.tmux.conf` and `tmux source-file ~/.tmux.conf`:
 
 ```tmux
@@ -43,5 +43,6 @@ add-zsh-hook precmd _claude_tmux_state_clear
 ## Alternatives
 
 [tmux-tab-pulse](https://github.com/rafaelsales/tmux-tab-pulse) (TPM, spinner, marks any busy process, background daemon), [tmux-agent-indicator](https://github.com/accessd/tmux-agent-indicator) (TPM, Claude + Codex + OpenCode, pane borders), [partner0/tmux-agent-status](https://github.com/partner0/tmux-agent-status) (same mechanism, renames the window). None distinguish a headless child session from the pane's owner.
+
 
 
