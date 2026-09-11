@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && mkdir -p /tmp/claude-status && echo \"${CLAUDE_STATUS_STATE:-working}\" > \"/tmp/claude-status/$TMUX_PANE\" || true"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && mkdir -p /tmp/claude-status && echo \"${CLAUDE_STATUS_STATE:-working}\" > \"/tmp/claude-status/$TMUX_PANE\" || true"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && mkdir -p /tmp/claude-status && echo waiting > \"/tmp/claude-status/$TMUX_PANE\" || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && mkdir -p /tmp/claude-status && echo idle > \"/tmp/claude-status/$TMUX_PANE\" || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && rm -f \"/tmp/claude-status/$TMUX_PANE\" || true"
+          }
+        ]
+      }
+    ]
+  }
+}
