@@ -22,7 +22,7 @@ chmod +x ~/.claude/hooks/tmux-claude-state.sh
 
 ### 2. Add hooks to Claude Code settings
 
-Merge `claude-tmux-hooks.json` into `~/.claude/settings.json`. Each hook is the same script with the state as its only argument.
+Merge `claude-tmux-hooks.json` into `~/.claude/settings.json`. Each hook is the same script with the state as its only argument. `PostToolUse` matters: `PreToolUse` fires before the permission prompt, so without it an approved tool call would keep showing 🛎️ until the next tool call or stop.
 
 ### 3. Add to tmux.conf
 
