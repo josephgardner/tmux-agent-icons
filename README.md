@@ -18,13 +18,13 @@ Requires tmux ≥ 3.2 (pane user options and `#{P:…}` format loops).
 3. Add to `~/.tmux.conf` and `tmux source-file ~/.tmux.conf`:
 
 ```tmux
-set -g window-status-format         '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},🛎️ ,#{?#{==:#{@claude_state},working},🤖 ,💤 }},#{?#{@claude_post},📝 ,}}}#I:#W#{?window_flags,#{window_flags}, }'
-set -g window-status-current-format '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},🛎️ ,#{?#{==:#{@claude_state},working},🤖 ,💤 }},#{?#{@claude_post},📝 ,}}}#I:#W#{?window_flags,#{window_flags}, }'
+set -g window-status-format         '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},🛎️,#{?#{==:#{@claude_state},working},🤖,💤}},#{?#{@claude_post},📝,}}}#{?#{P:#{@claude_state}#{@claude_post}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
+set -g window-status-current-format '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},🛎️,#{?#{==:#{@claude_state},working},🤖,💤}},#{?#{@claude_post},📝,}}}#{?#{P:#{@claude_state}#{@claude_post}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
 ```
 
 ## How it works
 
-Each hook runs `tmux set -p <option> <state>` on its own pane (`$TMUX_PANE`; the hooks are no-ops outside tmux). The window format loops the window's panes with `#{P:…}` and maps the option to an icon, so a window with two Claude panes shows two icons. Pane options are freed when the pane closes.
+Each hook runs `tmux set -p <option> <state>` on its own pane (`$TMUX_PANE`; the hooks are no-ops outside tmux). The window format loops the window's panes with `#{P:…}` and maps the option to an icon, so a window with two Claude panes shows two icons side by side, followed by a single space. Pane options are freed when the pane closes.
 
 **Headless sessions.** A `claude -p` launched from a hook (a session journal, say) inherits `$TMUX_PANE`, and its own hooks would otherwise flip the tab to 🤖. Claude Code sets `CLAUDE_CODE_ENTRYPOINT=cli` only for interactive sessions (`sdk-cli` for `-p`, `sdk-*` for the SDKs), so the script routes non-interactive sessions to a second option, `@claude_post`. The two sessions never write the same key, which is what makes parallel `SessionEnd` hooks safe without any read-modify-write. The format shows the interactive state when present and 📝 otherwise. Consequence: a `claude -p` you type by hand also shows 📝.
 
@@ -43,3 +43,4 @@ add-zsh-hook precmd _claude_tmux_state_clear
 ## Alternatives
 
 [tmux-tab-pulse](https://github.com/rafaelsales/tmux-tab-pulse) (TPM, spinner, marks any busy process, background daemon), [tmux-agent-indicator](https://github.com/accessd/tmux-agent-indicator) (TPM, Claude + Codex + OpenCode, pane borders), [partner0/tmux-agent-status](https://github.com/partner0/tmux-agent-status) (same mechanism, renames the window). None distinguish a headless child session from the pane's owner.
+
