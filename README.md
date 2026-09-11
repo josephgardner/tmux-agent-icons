@@ -1,41 +1,48 @@
 # Claude Code tmux status icons
 
-Shows per-window icons in your tmux status bar based on Claude Code's state:
+Per-window icons in the tmux status bar, one per Claude Code pane, driven by Claude Code hooks:
 
 | Icon | State |
 |------|-------|
 | 🤖 | Working (thinking, tool use) |
-| 🛎️ | Waiting for input |
-| 📝 | Post-processing (a helper session spawned by a hook) |
+| 🛎️ | Waiting for you (permission or elicitation prompt) |
+| 📝 | Post-processing: a nested `claude -p` spawned by a hook or tool |
 | 💤 | Idle |
+
+Requires tmux ≥ 3.2 (pane user options and `#{P:…}` format loops).
 
 ## Setup
 
-### 1. Install the status script
+### 1. Install the hook script
 
 ```bash
-cp tmux-claude-status.sh ~/.claude/tmux-claude-status.sh
-chmod +x ~/.claude/tmux-claude-status.sh
+cp tmux-claude-state.sh ~/.claude/hooks/tmux-claude-state.sh
+chmod +x ~/.claude/hooks/tmux-claude-state.sh
 ```
 
 ### 2. Add hooks to Claude Code settings
 
-Merge the contents of `claude-tmux-hooks.json` into your `~/.claude/settings.json` (or your project's `.claude/settings.json`).
+Merge `claude-tmux-hooks.json` into `~/.claude/settings.json`. Each hook is the same script with the state as its only argument.
 
 ### 3. Add to tmux.conf
 
 ```tmux
-set -g status-interval 2
-set -g window-status-format         '#(~/.claude/tmux-claude-status.sh #{window_id})#I:#W#{?window_flags,#{window_flags}, }'
-set -g window-status-current-format '#(~/.claude/tmux-claude-status.sh #{window_id})#I:#W#{?window_flags,#{window_flags}, }'
+set -g window-status-format         '#{P:#{?#{==:#{@claude_state},waiting},🛎️ ,}#{?#{==:#{@claude_state},working},🤖 ,}#{?#{==:#{@claude_state},post},📝 ,}#{?#{==:#{@claude_state},idle},💤 ,}}#I:#W#{?window_flags,#{window_flags}, }'
+set -g window-status-current-format '#{P:#{?#{==:#{@claude_state},waiting},🛎️ ,}#{?#{==:#{@claude_state},working},🤖 ,}#{?#{==:#{@claude_state},post},📝 ,}#{?#{==:#{@claude_state},idle},💤 ,}}#I:#W#{?window_flags,#{window_flags}, }'
 ```
 
-Then reload: `tmux source-file ~/.tmux.conf`
+Then `tmux source-file ~/.tmux.conf`. No `status-interval` needed: the format is evaluated by tmux itself when the status line redraws.
 
 ## How it works
 
-The Claude Code hooks write the current state (`working`, `waiting`, `idle`) to `/tmp/claude-status/$TMUX_PANE`. The tmux status script reads those files and picks the highest-priority icon across all panes in each window. The `$TMUX_PANE` guard means the hooks are no-ops outside tmux.
+Each hook runs `tmux set -p @claude_state <state>` on its own pane (`$TMUX_PANE`; the hooks are no-ops outside tmux). The window format loops over the window's panes with `#{P:…}` and maps the option to an icon, so a window with two Claude panes shows two icons. There is no state file, no poller and no per-tick process: pane options are freed when the pane closes.
 
-## Post-processing sessions
+**Nested sessions.** A headless `claude -p` launched from a hook (a session journal, say) inherits `$TMUX_PANE`, and its own hooks would otherwise flip the tab to 🤖. The script counts `claude` processes between itself and the pane's shell; two or more means it is nested, so it reports 📝 instead and never clears the outer session's state. No spawner has to opt in. `CLAUDE_STATUS_STATE=<state>` overrides the detection if you need to.
 
-A hook that runs a headless `claude -p` (a journal summarizer, say) inherits `TMUX_PANE`, so the child's own hooks would show 🤖 while it runs. Export `CLAUDE_STATUS_STATE=post` before spawning it and the `working` hooks write `post` instead, which renders as 📝 and ranks below a live working or waiting pane in the same window. It clears when the child session ends.
+**Why not tmux `monitor-*` flags?** They are close (bell ≈ waiting, activity ≈ working, silence ≈ idle) but they mean "unseen", so tmux clears them when you look at the window, and the bell cannot tell a permission prompt from an idle nudge. Hooks are the only exact source.
+
+**Crash safety.** `SessionEnd` clears the option, but a killed Claude cannot. If you want the icon to vanish whenever the shell gets its prompt back, add to `.zshrc`:
+
+```zsh
+precmd() { [[ -n $TMUX_PANE ]] && tmux set -pu -t $TMUX_PANE @claude_state 2>/dev/null }
+```
