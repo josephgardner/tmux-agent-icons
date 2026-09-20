@@ -16,9 +16,37 @@ Requires tmux ≥ 3.2 (pane user options and `#{P:…}` format loops).
 
 Each agent writes its own pane option — `@claude_state`/`@claude_post`, `@codex_state`, `@opencode_state` — so the three integrations are independent and you can adopt them one at a time. The tmux and shell bits below cover all three; the per-agent sections are self-contained.
 
+## Install
+
+One command installs the tmux format and all three harnesses:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash
+```
+
+Install only what you use:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- tmux
+curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- claude
+curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- codex
+curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- opencode
+```
+
+The script is idempotent, backs up every file it edits, and leaves an already-configured harness alone. It installs:
+
+| Harness | Files | Jump |
+|---------|-------|------|
+| tmux | status-bar format in `~/.tmux.conf` | [tmux](#tmux) |
+| Claude Code | `~/.claude/hooks/tmux-claude-state.sh`, hook entries in `~/.claude/settings.json` | [Claude Code](#claude-code) |
+| Codex | `~/.local/bin/tmux-agent-state`, `~/.codex/hooks.json` | [Codex](#codex) |
+| opencode | `~/.config/opencode/plugin/tmux-agent-state.ts`, `plugin` entry in `~/.config/opencode/opencode.jsonc` | [opencode](#opencode) |
+
+Then reload tmux: `tmux source-file ~/.tmux.conf`.
+
 ## tmux
 
-Add to `~/.tmux.conf` and `tmux source-file ~/.tmux.conf`:
+The status-bar format is the same for every harness. Add this to `~/.tmux.conf` and run `tmux source-file ~/.tmux.conf`:
 
 ```tmux
 set -g window-status-format         '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},✋,#{?#{==:#{@claude_state},working},🧠,💤}},#{?#{@claude_post},🔄,}}}}#{P:#{?#{@codex_state},#{?#{==:#{@codex_state},waiting},✋,#{?#{==:#{@codex_state},working},🧠,💤}},}}#{P:#{?#{@opencode_state},#{?#{==:#{@opencode_state},waiting},✋,#{?#{==:#{@opencode_state},working},🧠,💤}},}}#{?#{P:#{@claude_state}#{@claude_post}#{@codex_state}#{@opencode_state}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
@@ -29,17 +57,61 @@ If you only use Claude Code, the two-option version in this repo's history is eq
 
 ## Claude Code
 
-1. `cp tmux-claude-state.sh ~/.claude/hooks/ && chmod +x ~/.claude/hooks/tmux-claude-state.sh`
-2. Merge `claude-tmux-hooks.json` into `~/.claude/settings.json`. Every hook is the same script with the state as its only argument. `PostToolUse` matters: `PreToolUse` fires before the permission prompt, so without it an approved tool call would keep showing ✋ until the next event.
-3. (Claude writes `@claude_state`/`@claude_post`; the tmux block above already renders them.)
+[Claude Code hooks](https://docs.claude.com/en/docs/claude-code/hooks) fire shell commands on lifecycle events, so the tmux option tracks the session exactly.
+
+### Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- claude
+```
+
+<details>
+<summary>Manual install</summary>
+
+```sh
+RAW=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main
+mkdir -p ~/.claude/hooks
+curl -fsSL "$RAW/tmux-claude-state.sh" -o ~/.claude/hooks/tmux-claude-state.sh
+chmod +x ~/.claude/hooks/tmux-claude-state.sh
+```
+
+Then merge `claude-tmux-hooks.json` into `~/.claude/settings.json`. With `jq`:
+
+```sh
+curl -fsSL "$RAW/claude-tmux-hooks.json" -o /tmp/claude-tmux-hooks.json
+jq --slurpfile add /tmp/claude-tmux-hooks.json \
+  '.hooks = ((.hooks // {}) as $h | reduce ($add[0].hooks | keys[]) as $k ($h; .[$k] = ((.[$k] // []) + $add[0].hooks[$k] | unique)))' \
+  ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json
+```
+
+</details>
+
+Every hook is the same script with the state as its only argument. `PostToolUse` matters: `PreToolUse` fires before the permission prompt, so without it an approved tool call would keep showing ✋ until the next event. Claude writes `@claude_state`/`@claude_post`; the tmux block above already renders them.
 
 ## Codex
 
 Codex has a lifecycle-hook system. It discovers `hooks.json` next to `config.toml`, and non-managed hooks are skipped until you review and trust them.
 
-1. `cp tmux-agent-state.sh ~/.local/bin/ && chmod +x ~/.local/bin/tmux-agent-state`
-2. `cp codex-hooks.json ~/.codex/hooks.json`
-3. Start Codex and run `/hooks` to trust the new hooks (or pass `--dangerously-bypass-hook-trust` for one-off automation).
+### Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- codex
+```
+
+<details>
+<summary>Manual install</summary>
+
+```sh
+RAW=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main
+mkdir -p ~/.local/bin ~/.codex
+curl -fsSL "$RAW/tmux-agent-state.sh" -o ~/.local/bin/tmux-agent-state
+chmod +x ~/.local/bin/tmux-agent-state
+curl -fsSL "$RAW/codex-hooks.json" -o ~/.codex/hooks.json
+```
+
+</details>
+
+Start Codex and run `/hooks` to trust the new hooks (or pass `--dangerously-bypass-hook-trust` for one-off automation).
 
 The mapping: `SessionStart`/`Stop`/`Interrupt` → idle, `UserPromptSubmit`/`PreToolUse`/`PostToolUse` → working, `PermissionRequest` → waiting, `SessionEnd` → clear. Codex passes each hook a JSON object on stdin; the script ignores it and takes the state as its argument.
 
@@ -47,8 +119,22 @@ The mapping: `SessionStart`/`Stop`/`Interrupt` → idle, `UserPromptSubmit`/`Pre
 
 opencode plugins subscribe to the server event bus.
 
-1. `cp opencode-tmux-agent-state.ts ~/.config/opencode/plugin/tmux-agent-state.ts`
-2. Add it to `~/.config/opencode/opencode.jsonc`:
+### Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- opencode
+```
+
+<details>
+<summary>Manual install</summary>
+
+```sh
+RAW=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main
+mkdir -p ~/.config/opencode/plugin
+curl -fsSL "$RAW/opencode-tmux-agent-state.ts" -o ~/.config/opencode/plugin/tmux-agent-state.ts
+```
+
+Then add it to `~/.config/opencode/opencode.jsonc`:
 
 ```json
 {
@@ -57,7 +143,9 @@ opencode plugins subscribe to the server event bus.
 }
 ```
 
-3. Restart opencode (config and plugins load at startup, not hot-reloaded).
+</details>
+
+Restart opencode (config and plugins load at startup, not hot-reloaded).
 
 The plugin maps `session.status` → working/idle, `permission.asked` → waiting, `permission.replied` → working, and the `question` tool → waiting until you answer. A blocked turn stays ✋ even if the session reports itself busy while it waits for you.
 
