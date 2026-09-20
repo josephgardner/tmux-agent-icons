@@ -1,7 +1,7 @@
 # ✋ tmux Agent Icons
 ## Claude Code • Codex • opencode
 
-Per-window icons in the tmux status bar, one per agent pane, driven by each agent's own lifecycle events. A few lines of shell, one `tmux set` per event, no poller, no state files.
+Per-window icons in the [tmux](https://github.com/tmux/tmux) status bar, one per agent pane, driven by each agent's own lifecycle events. A few lines of shell, one `tmux set` per event, no poller, no state files.
 
 ![tmux status bar: the current window shows 🧠✋ (Claude working, opencode waiting in its two panes), an idle Codex window shows 💤, and a headless post-processing window shows 🔄](screenshot.png)
 
