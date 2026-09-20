@@ -75,8 +75,14 @@ install_claude() {
     return 0
   fi
 
-  [ -f "$settings" ] || printf '{}\n' > "$settings"
-  backup "$settings"
+  local created=0
+  if [ ! -f "$settings" ]; then
+    printf '{}\n' > "$settings"
+    created=1
+  fi
+  if [ "$created" -eq 0 ]; then
+    backup "$settings"
+  fi
   local tmp; tmp="$(mktemp)"
   jq --slurpfile add "$add" '
     .hooks = ((.hooks // {}) as $h
