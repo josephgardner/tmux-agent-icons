@@ -23,7 +23,7 @@ With [TPM](https://github.com/tmux-plugins/tpm):
 set -g @plugin 'josephgardner/tmux-agent-icons'
 ```
 
-Reload tmux, then press `prefix + I`. Requires tmux 3.2+.
+Reload tmux, then press `prefix + I`. The plugin prepends the icons to your existing window format. Requires tmux 3.2+.
 
 ### Claude Code
 
