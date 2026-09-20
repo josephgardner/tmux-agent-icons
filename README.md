@@ -3,8 +3,6 @@
 
 Per-window icons in the tmux status bar, one per agent pane, driven by each agent's own lifecycle events. A few lines of shell, one `tmux set` per event, no poller, no state files.
 
-> **Canonical repo: <https://github.com/josephgardner/tmux-agent-icons>.** This gist is a snapshot; file issues, send PRs, and grab the latest version there.
-
 | Icon | State |
 |------|-------|
 | 🧠 | Working (thinking, tool use) |
