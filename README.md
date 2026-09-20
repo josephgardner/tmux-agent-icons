@@ -18,31 +18,26 @@ Each agent writes its own pane option — `@claude_state`/`@claude_post`, `@code
 
 ## Install
 
-One command installs the tmux format and all three harnesses:
+The installer is one script that handles every target. Fetch it, then run it:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash
+f=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh
+curl -fsSL "$f" -o install.sh
+
+bash install.sh           # tmux + Claude Code + Codex + opencode
+bash install.sh claude    # one target: tmux, claude, codex, or opencode
 ```
 
-Install only what you use:
+It is idempotent, backs up every file it edits, and skips a harness that is already configured.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- tmux
-curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- claude
-curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- codex
-curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- opencode
-```
+| Target | Installs | Then |
+|--------|----------|------|
+| `tmux` | status-bar format in `~/.tmux.conf` | `tmux source-file ~/.tmux.conf` |
+| `claude` | `~/.claude/hooks/tmux-claude-state.sh` + hook entries in `~/.claude/settings.json` | — |
+| `codex` | `~/.local/bin/tmux-agent-state` + `~/.codex/hooks.json` | run `/hooks` to trust |
+| `opencode` | `~/.config/opencode/plugin/tmux-agent-state.ts` + `plugin` entry in `opencode.jsonc` | restart opencode |
 
-The script is idempotent, backs up every file it edits, and leaves an already-configured harness alone. It installs:
-
-| Harness | Files | Jump |
-|---------|-------|------|
-| tmux | status-bar format in `~/.tmux.conf` | [tmux](#tmux) |
-| Claude Code | `~/.claude/hooks/tmux-claude-state.sh`, hook entries in `~/.claude/settings.json` | [Claude Code](#claude-code) |
-| Codex | `~/.local/bin/tmux-agent-state`, `~/.codex/hooks.json` | [Codex](#codex) |
-| opencode | `~/.config/opencode/plugin/tmux-agent-state.ts`, `plugin` entry in `~/.config/opencode/opencode.jsonc` | [opencode](#opencode) |
-
-Then reload tmux: `tmux source-file ~/.tmux.conf`.
+Per-harness details and manual steps: [tmux](#tmux) · [Claude Code](#claude-code) · [Codex](#codex) · [opencode](#opencode).
 
 ## tmux
 
@@ -61,8 +56,10 @@ If you only use Claude Code, the two-option version in this repo's history is eq
 
 ### Install
 
+Fetch [install.sh](#install) once, then:
+
 ```sh
-curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- claude
+bash install.sh claude
 ```
 
 <details>
@@ -94,8 +91,10 @@ Codex has a lifecycle-hook system. It discovers `hooks.json` next to `config.tom
 
 ### Install
 
+Fetch [install.sh](#install) once, then:
+
 ```sh
-curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- codex
+bash install.sh codex
 ```
 
 <details>
@@ -121,8 +120,10 @@ opencode plugins subscribe to the server event bus.
 
 ### Install
 
+Fetch [install.sh](#install) once, then:
+
 ```sh
-curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- opencode
+bash install.sh opencode
 ```
 
 <details>
