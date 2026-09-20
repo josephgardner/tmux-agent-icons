@@ -2,11 +2,13 @@
 
 Per-window icons in the tmux status bar, one per agent pane, driven by each agent's own lifecycle events. A few lines of shell, one `tmux set` per event, no poller, no state files.
 
+> **Canonical repo: <https://github.com/josephgardner/tmux-agent-icons>.** This gist is a snapshot; file issues, send PRs, and grab the latest version there.
+
 | Icon | State |
 |------|-------|
 | 🧠 | Working (thinking, tool use) |
 | ✋ | Waiting for you (permission prompt, elicitation, or opencode's `question` tool) |
-| ♻️ | Post-processing: a headless `claude -p` running in the pane, e.g. spawned by a hook |
+| 🔄 | Post-processing: a headless `claude -p` running in the pane, e.g. spawned by a hook |
 | 💤 | Idle |
 
 Requires tmux ≥ 3.2 (pane user options and `#{P:…}` format loops).
@@ -18,11 +20,11 @@ Each agent writes its own pane option — `@claude_state`/`@claude_post`, `@code
 Add to `~/.tmux.conf` and `tmux source-file ~/.tmux.conf`:
 
 ```tmux
-set -g window-status-format         '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},✋,#{?#{==:#{@claude_state},working},🧠,💤}},#{?#{@claude_post},♻️,}}}}#{P:#{?#{@codex_state},#{?#{==:#{@codex_state},waiting},✋,#{?#{==:#{@codex_state},working},🧠,💤}},}}#{P:#{?#{@opencode_state},#{?#{==:#{@opencode_state},waiting},✋,#{?#{==:#{@opencode_state},working},🧠,💤}},}}#{?#{P:#{@claude_state}#{@claude_post}#{@codex_state}#{@opencode_state}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
-set -g window-status-current-format '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},✋,#{?#{==:#{@claude_state},working},🧠,💤}},#{?#{@claude_post},♻️,}}}}#{P:#{?#{@codex_state},#{?#{==:#{@codex_state},waiting},✋,#{?#{==:#{@codex_state},working},🧠,💤}},}}#{P:#{?#{@opencode_state},#{?#{==:#{@opencode_state},waiting},✋,#{?#{==:#{@opencode_state},working},🧠,💤}},}}#{?#{P:#{@claude_state}#{@claude_post}#{@codex_state}#{@opencode_state}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
+set -g window-status-format         '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},✋,#{?#{==:#{@claude_state},working},🧠,💤}},#{?#{@claude_post},🔄,}}}}#{P:#{?#{@codex_state},#{?#{==:#{@codex_state},waiting},✋,#{?#{==:#{@codex_state},working},🧠,💤}},}}#{P:#{?#{@opencode_state},#{?#{==:#{@opencode_state},waiting},✋,#{?#{==:#{@opencode_state},working},🧠,💤}},}}#{?#{P:#{@claude_state}#{@claude_post}#{@codex_state}#{@opencode_state}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
+set -g window-status-current-format '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},✋,#{?#{==:#{@claude_state},working},🧠,💤}},#{?#{@claude_post},🔄,}}}}#{P:#{?#{@codex_state},#{?#{==:#{@codex_state},waiting},✋,#{?#{==:#{@codex_state},working},🧠,💤}},}}#{P:#{?#{@opencode_state},#{?#{==:#{@opencode_state},waiting},✋,#{?#{==:#{@opencode_state},working},🧠,💤}},}}#{?#{P:#{@claude_state}#{@claude_post}#{@codex_state}#{@opencode_state}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
 ```
 
-If you only use Claude Code, the two-option version in this gist's history is equivalent; these lines just append a Codex and an opencode fragment.
+If you only use Claude Code, the two-option version in this repo's history is equivalent; these lines just append a Codex and an opencode fragment.
 
 ## Claude Code
 
@@ -62,7 +64,7 @@ The plugin maps `session.status` → working/idle, `permission.asked` → waitin
 
 Each event runs `tmux set -p <option> <state>` on its own pane (`$TMUX_PANE`; the writes are no-ops outside tmux). The window format loops the window's panes with `#{P:…}` and maps the option to an icon, so a window with two agent panes shows two icons side by side, followed by a single space. Pane options are freed when the pane closes.
 
-**Headless Claude sessions.** A `claude -p` launched from a hook (a session journal, say) inherits `$TMUX_PANE`, and its own hooks would otherwise flip the tab to 🧠. Claude Code sets `CLAUDE_CODE_ENTRYPOINT=cli` only for interactive sessions (`sdk-cli` for `-p`, `sdk-*` for the SDKs), so `tmux-claude-state.sh` routes non-interactive sessions to a second option, `@claude_post`. The two sessions never write the same key, which is what makes parallel `SessionEnd` hooks safe without any read-modify-write. The format shows the interactive state when present and ♻️ otherwise. Consequence: a `claude -p` you type by hand also shows ♻️.
+**Headless Claude sessions.** A `claude -p` launched from a hook (a session journal, say) inherits `$TMUX_PANE`, and its own hooks would otherwise flip the tab to 🧠. Claude Code sets `CLAUDE_CODE_ENTRYPOINT=cli` only for interactive sessions (`sdk-cli` for `-p`, `sdk-*` for the SDKs), so `tmux-claude-state.sh` routes non-interactive sessions to a second option, `@claude_post`. The two sessions never write the same key, which is what makes parallel `SessionEnd` hooks safe without any read-modify-write. The format shows the interactive state when present and 🔄 otherwise. Consequence: a `claude -p` you type by hand also shows 🔄.
 
 **Why not tmux `monitor-*` flags?** They are close (bell ≈ waiting, activity ≈ working, silence ≈ idle) but they mean "unseen", so tmux clears them when you look at the window, and the bell cannot tell a permission prompt from an idle nudge. Agent events are the only exact source.
 
@@ -78,7 +80,7 @@ add-zsh-hook precmd _tmux_agent_state_clear
 
 ## Alignment
 
-`♻️` carries a variation selector and renders as one or two cells depending on the terminal. If your tabs jitter, swap the emoji for single-cell glyphs or colour the tab name instead, e.g. `#{?#{==:#{@claude_state},waiting},#[fg=yellow],}`.
+The post-processing icon is 🔄 (`U+1F504`), a plain double-width emoji like the rest. An earlier version used ♻️ (`U+267B U+FE0F`); the trailing variation selector made tmux and the terminal disagree on its width, so it could render blank or shift the tab until a redraw. If your terminal still mishandles any of these, swap the emoji for a single-cell glyph or colour the tab name instead, e.g. `#{?#{==:#{@claude_state},waiting},#[fg=yellow],}`.
 
 ## Alternatives
 
