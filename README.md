@@ -1,4 +1,4 @@
-# ✋ Agent tmux status icons
+# ✋ tmux Agent Icons
 ## Claude Code • Codex • opencode
 
 Per-window icons in the tmux status bar, one per agent pane, driven by each agent's own lifecycle events. A few lines of shell, one `tmux set` per event, no poller, no state files.
