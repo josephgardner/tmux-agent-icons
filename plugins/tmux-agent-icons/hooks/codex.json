@@ -2,77 +2,70 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/tmux-claude-state.sh idle"
+            "command": "sh \"${PLUGIN_ROOT}/bin/tmux-agent-state\" codex idle"
           }
         ]
       }
     ],
     "UserPromptSubmit": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/tmux-claude-state.sh working"
+            "command": "sh \"${PLUGIN_ROOT}/bin/tmux-agent-state\" codex working"
           }
         ]
       }
     ],
-    "PreToolUse": [
+    "PermissionRequest": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/tmux-claude-state.sh working"
+            "command": "sh \"${PLUGIN_ROOT}/bin/tmux-agent-state\" codex waiting"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/tmux-claude-state.sh working"
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "matcher": "permission_prompt|elicitation_dialog",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/tmux-claude-state.sh waiting"
+            "command": "sh \"${PLUGIN_ROOT}/bin/tmux-agent-state\" codex working"
           }
         ]
       }
     ],
     "Stop": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/tmux-claude-state.sh idle"
+            "command": "sh \"${PLUGIN_ROOT}/bin/tmux-agent-state\" codex idle"
+          }
+        ]
+      }
+    ],
+    "Interrupt": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${PLUGIN_ROOT}/bin/tmux-agent-state\" codex idle"
           }
         ]
       }
     ],
     "SessionEnd": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/tmux-claude-state.sh end"
+            "command": "sh \"${PLUGIN_ROOT}/bin/tmux-agent-state\" codex end"
           }
         ]
       }

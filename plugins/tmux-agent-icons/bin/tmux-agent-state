@@ -1,0 +1,16 @@
+#!/bin/sh
+
+[ -n "${TMUX_PANE:-}" ] || exit 0
+
+agent=$1
+state=$2
+option="@${agent}_state"
+
+# Keep Claude's non-interactive child sessions separate from the pane owner.
+[ "$agent" != claude ] || [ "${CLAUDE_CODE_ENTRYPOINT:-cli}" = cli ] || option=@claude_post
+
+if [ "$state" = end ]; then
+  tmux set-option -p -u -t "$TMUX_PANE" "$option" 2>/dev/null || true
+else
+  tmux set-option -p -t "$TMUX_PANE" "$option" "$state" 2>/dev/null || true
+fi

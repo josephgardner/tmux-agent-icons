@@ -1,0 +1,9 @@
+{
+  "name": "tmux-agent-icons",
+  "description": "Show Claude Code lifecycle state in tmux window tabs.",
+  "author": {
+    "name": "Joseph Gardner"
+  },
+  "repository": "https://github.com/josephgardner/tmux-agent-icons",
+  "hooks": "./hooks/claude.json"
+}
