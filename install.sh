@@ -2,10 +2,11 @@
 # Install tmux Agent Icons for Claude Code, Codex, opencode, and/or tmux.
 #
 #   curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash
-#   curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | bash -s -- claude
+#   curl -fsSL https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh | TARGET=claude bash
 #   ./install.sh codex opencode
 #
-# Targets: all (default), tmux, claude, codex, opencode.
+# With no target it prompts (when a terminal is available); otherwise it
+# installs everything. Targets: all, tmux, claude, codex, opencode.
 set -euo pipefail
 
 REPO="josephgardner/tmux-agent-icons"
@@ -125,7 +126,58 @@ install_opencode() {
   say "opencode: restart it to load the plugin."
 }
 
-targets=("$@")
+# Map a menu answer ("3", "4 5", "", …) on stdin to target names on stdout.
+parse_selection() {
+  local reply tok seen=""
+  IFS= read -r reply || true
+  [ -n "$reply" ] || { printf 'all\n'; return; }
+  for tok in $(printf '%s' "$reply" | tr ',' ' '); do
+    case "$tok" in
+      1|all|everything) printf 'all\n'; return ;;
+      2|tmux)     tok=tmux ;;
+      3|claude)   tok=claude ;;
+      4|codex)    tok=codex ;;
+      5|opencode) tok=opencode ;;
+      *) warn "ignoring unknown selection: $tok"; continue ;;
+    esac
+    case " $seen " in
+      *" $tok "*) ;;
+      *) seen="$seen $tok"; printf '%s\n' "$tok" ;;
+    esac
+  done
+}
+
+# No target given: ask, unless there is no terminal (then install everything).
+prompt_menu() {
+  local tty=/dev/tty
+  {
+    printf '\n  tmux Agent Icons — what should I install?\n\n'
+    printf '    1) everything    tmux + Claude Code + Codex + opencode\n'
+    printf '    2) tmux          status-bar format\n'
+    printf '    3) Claude Code   hook + settings.json entries\n'
+    printf '    4) Codex         hooks.json + helper\n'
+    printf '    5) opencode      plugin + config entry\n\n'
+    printf '  Numbers separated by spaces, or Enter for everything: '
+  } > "$tty"
+  parse_selection < "$tty"
+}
+
+collect_targets() {
+  if [ "$#" -gt 0 ]; then
+    printf '%s\n' "$*" | tr ',' ' ' | tr ' ' '\n'
+  elif [ -n "${TARGET:-}" ]; then
+    printf '%s\n' "$TARGET" | tr ',' ' ' | tr ' ' '\n'
+  elif [ -r /dev/tty ] && [ -w /dev/tty ]; then
+    prompt_menu
+  else
+    printf 'all\n'
+  fi
+}
+
+targets=()
+while IFS= read -r t; do
+  [ -n "$t" ] && targets+=("$t")
+done < <(collect_targets "$@")
 [ "${#targets[@]}" -eq 0 ] && targets=(all)
 
 for t in "${targets[@]}"; do

@@ -18,14 +18,18 @@ Each agent writes its own pane option — `@claude_state`/`@claude_post`, `@code
 
 ## Install
 
-The installer is one script that handles every target. Fetch it, then run it:
+One command — it asks what to install:
 
 ```sh
 f=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh
-curl -fsSL "$f" -o install.sh
+curl -fsSL "$f" | bash
+```
 
-bash install.sh           # tmux + Claude Code + Codex + opencode
-bash install.sh claude    # one target: tmux, claude, codex, or opencode
+Skip the prompt by naming targets (handy for dotfiles and CI) — space- or comma-separated:
+
+```sh
+curl -fsSL "$f" | TARGET=claude bash
+curl -fsSL "$f" | TARGET="claude codex" bash
 ```
 
 It is idempotent, backs up every file it edits, and skips a harness that is already configured.
@@ -56,10 +60,10 @@ If you only use Claude Code, the two-option version in this repo's history is eq
 
 ### Install
 
-Fetch [install.sh](#install) once, then:
+From the [installer](#install), choose **Claude Code** — or skip the prompt:
 
 ```sh
-bash install.sh claude
+curl -fsSL "$f" | TARGET=claude bash
 ```
 
 <details>
@@ -91,10 +95,10 @@ Codex has a lifecycle-hook system. It discovers `hooks.json` next to `config.tom
 
 ### Install
 
-Fetch [install.sh](#install) once, then:
+From the [installer](#install), choose **Codex** — or skip the prompt:
 
 ```sh
-bash install.sh codex
+curl -fsSL "$f" | TARGET=codex bash
 ```
 
 <details>
@@ -120,10 +124,10 @@ opencode plugins subscribe to the server event bus.
 
 ### Install
 
-Fetch [install.sh](#install) once, then:
+From the [installer](#install), choose **opencode** — or skip the prompt:
 
 ```sh
-bash install.sh opencode
+curl -fsSL "$f" | TARGET=opencode bash
 ```
 
 <details>
