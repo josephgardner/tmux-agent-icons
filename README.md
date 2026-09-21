@@ -43,6 +43,8 @@ Run `/hooks` once to review and trust the plugin hooks.
 
 ### OpenCode
 
+Requires OpenCode v2+ (the `plugin add` command, the `::path:` git selector, and the `@opencode/plugin` API).
+
 ```sh
 opencode plugin add 'github:josephgardner/tmux-agent-icons#main::path:opencode'
 ```

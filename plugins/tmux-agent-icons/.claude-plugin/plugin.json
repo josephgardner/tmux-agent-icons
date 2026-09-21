@@ -1,5 +1,6 @@
 {
   "name": "tmux-agent-icons",
+  "version": "0.1.0",
   "description": "Show Claude Code lifecycle state in tmux window tabs.",
   "author": {
     "name": "Joseph Gardner"
