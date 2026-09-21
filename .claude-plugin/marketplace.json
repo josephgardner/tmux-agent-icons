@@ -1,0 +1,13 @@
+{
+  "name": "tmux-agent-icons",
+  "owner": {
+    "name": "Joseph Gardner"
+  },
+  "plugins": [
+    {
+      "name": "tmux-agent-icons",
+      "source": "./plugins/tmux-agent-icons",
+      "description": "Show Claude Code lifecycle state in tmux window tabs."
+    }
+  ]
+}

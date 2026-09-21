@@ -1,181 +1,54 @@
-# ✋ tmux Agent Icons
-## Claude Code • Codex • OpenCode
+# tmux Agent Icons
 
-Per-window icons in the [tmux](https://github.com/tmux/tmux) status bar, one per agent pane, driven by each agent's own lifecycle events. A few lines of shell, one `tmux set` per event, no poller, no state files.
+See what your coding agents are doing without leaving tmux.
 
-![tmux status bar: the current window shows 🧠✋ (Claude working, opencode waiting in its two panes), an idle Codex window shows 💤, and a headless post-processing window shows 🔄](screenshot.png)
+![tmux status bar showing agent state icons](screenshot.png)
 
 | Icon | State |
-|------|-------|
-| 🧠 | Working (thinking, tool use) |
-| ✋ | Waiting for you (permission prompt, elicitation, or opencode's `question` tool) |
-| 🔄 | Post-processing: a headless `claude -p` running in the pane, e.g. spawned by a hook |
-| 💤 | Idle |
+| --- | --- |
+| 🧠 | working |
+| ✋ | waiting for you |
+| 💤 | idle |
+| 🔄 | headless Claude work |
 
-Requires tmux ≥ 3.2 (pane user options and `#{P:…}` format loops).
-
-Each agent writes its own pane option — `@claude_state`/`@claude_post`, `@codex_state`, `@opencode_state` — so the three integrations are independent and you can adopt them one at a time. The tmux and shell bits below cover all three; the per-agent sections are self-contained.
+Claude Code, Codex, and OpenCode publish lifecycle events directly to the tmux pane. No polling, daemon, or state files.
 
 ## Install
 
-One command — it asks what to install:
+### tmux
 
-```sh
-f=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main/install.sh
-curl -fsSL "$f" | bash
-```
-
-Skip the prompt by naming targets (handy for dotfiles and CI) — space- or comma-separated:
-
-```sh
-curl -fsSL "$f" | TARGET=claude bash
-curl -fsSL "$f" | TARGET="claude codex" bash
-```
-
-It is idempotent, backs up every file it edits, and skips a harness that is already configured.
-
-| Target | Installs | Then |
-|--------|----------|------|
-| `tmux` | status-bar format in `~/.tmux.conf` | `tmux source-file ~/.tmux.conf` |
-| `claude` | `~/.claude/hooks/tmux-claude-state.sh` + hook entries in `~/.claude/settings.json` | — |
-| `codex` | `~/.local/bin/tmux-agent-state` + `~/.codex/hooks.json` | run `/hooks` to trust |
-| `opencode` | `~/.config/opencode/plugin/tmux-agent-state.ts` + `plugin` entry in `opencode.jsonc` | restart opencode |
-
-Per-harness details and manual steps: [tmux](#tmux) · [Claude Code](#claude-code) · [Codex](#codex) · [opencode](#opencode).
-
-## tmux
-
-The status-bar format is the same for every harness. Add this to `~/.tmux.conf` and run `tmux source-file ~/.tmux.conf`:
+With [TPM](https://github.com/tmux-plugins/tpm):
 
 ```tmux
-set -g window-status-format         '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},✋,#{?#{==:#{@claude_state},working},🧠,💤}},#{?#{@claude_post},🔄,}}}}#{P:#{?#{@codex_state},#{?#{==:#{@codex_state},waiting},✋,#{?#{==:#{@codex_state},working},🧠,💤}},}}#{P:#{?#{@opencode_state},#{?#{==:#{@opencode_state},waiting},✋,#{?#{==:#{@opencode_state},working},🧠,💤}},}}#{?#{P:#{@claude_state}#{@claude_post}#{@codex_state}#{@opencode_state}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
-set -g window-status-current-format '#{P:#{?#{@claude_state},#{?#{==:#{@claude_state},waiting},✋,#{?#{==:#{@claude_state},working},🧠,💤}},#{?#{@claude_post},🔄,}}}}#{P:#{?#{@codex_state},#{?#{==:#{@codex_state},waiting},✋,#{?#{==:#{@codex_state},working},🧠,💤}},}}#{P:#{?#{@opencode_state},#{?#{==:#{@opencode_state},waiting},✋,#{?#{==:#{@opencode_state},working},🧠,💤}},}}#{?#{P:#{@claude_state}#{@claude_post}#{@codex_state}#{@opencode_state}}, ,}#I:#W#{?window_flags,#{window_flags}, }'
+set -g @plugin 'josephgardner/tmux-agent-icons'
 ```
 
-If you only use Claude Code, the two-option version in this repo's history is equivalent; these lines just append a Codex and an opencode fragment.
+Reload tmux, then press `prefix + I`. The plugin prepends the icons to your existing window format. Requires tmux 3.2+.
 
-## Claude Code
-
-[Claude Code hooks](https://docs.claude.com/en/docs/claude-code/hooks) fire shell commands on lifecycle events, so the tmux option tracks the session exactly.
-
-### Install
-
-From the [installer](#install), choose **Claude Code** — or skip the prompt:
+### Claude Code
 
 ```sh
-curl -fsSL "$f" | TARGET=claude bash
+claude plugin marketplace add josephgardner/tmux-agent-icons
+claude plugin install tmux-agent-icons@tmux-agent-icons
 ```
 
-<details>
-<summary>Manual install</summary>
+### Codex
 
 ```sh
-RAW=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main
-mkdir -p ~/.claude/hooks
-curl -fsSL "$RAW/tmux-claude-state.sh" -o ~/.claude/hooks/tmux-claude-state.sh
-chmod +x ~/.claude/hooks/tmux-claude-state.sh
+codex plugin marketplace add josephgardner/tmux-agent-icons
+codex plugin add tmux-agent-icons@tmux-agent-icons
 ```
 
-Then merge `claude-tmux-hooks.json` into `~/.claude/settings.json`. With `jq`:
+Run `/hooks` once to review and trust the plugin hooks.
+
+### OpenCode
 
 ```sh
-curl -fsSL "$RAW/claude-tmux-hooks.json" -o /tmp/claude-tmux-hooks.json
-jq --slurpfile add /tmp/claude-tmux-hooks.json \
-  '.hooks = ((.hooks // {}) as $h | reduce ($add[0].hooks | keys[]) as $k ($h; .[$k] = ((.[$k] // []) + $add[0].hooks[$k] | unique)))' \
-  ~/.claude/settings.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json
+opencode plugin add 'github:josephgardner/tmux-agent-icons#main::path:opencode'
 ```
-
-</details>
-
-Every hook is the same script with the state as its only argument. `PostToolUse` matters: `PreToolUse` fires before the permission prompt, so without it an approved tool call would keep showing ✋ until the next event. Claude writes `@claude_state`/`@claude_post`; the tmux block above already renders them.
-
-## Codex
-
-Codex has a lifecycle-hook system. It discovers `hooks.json` next to `config.toml`, and non-managed hooks are skipped until you review and trust them.
-
-### Install
-
-From the [installer](#install), choose **Codex** — or skip the prompt:
-
-```sh
-curl -fsSL "$f" | TARGET=codex bash
-```
-
-<details>
-<summary>Manual install</summary>
-
-```sh
-RAW=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main
-mkdir -p ~/.local/bin ~/.codex
-curl -fsSL "$RAW/tmux-agent-state.sh" -o ~/.local/bin/tmux-agent-state
-chmod +x ~/.local/bin/tmux-agent-state
-curl -fsSL "$RAW/codex-hooks.json" -o ~/.codex/hooks.json
-```
-
-</details>
-
-Start Codex and run `/hooks` to trust the new hooks (or pass `--dangerously-bypass-hook-trust` for one-off automation).
-
-The mapping: `SessionStart`/`Stop`/`Interrupt` → idle, `UserPromptSubmit`/`PreToolUse`/`PostToolUse` → working, `PermissionRequest` → waiting, `SessionEnd` → clear. Codex passes each hook a JSON object on stdin; the script ignores it and takes the state as its argument.
-
-## opencode
-
-opencode plugins subscribe to the server event bus.
-
-### Install
-
-From the [installer](#install), choose **opencode** — or skip the prompt:
-
-```sh
-curl -fsSL "$f" | TARGET=opencode bash
-```
-
-<details>
-<summary>Manual install</summary>
-
-```sh
-RAW=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main
-mkdir -p ~/.config/opencode/plugin
-curl -fsSL "$RAW/opencode-tmux-agent-state.ts" -o ~/.config/opencode/plugin/tmux-agent-state.ts
-```
-
-Then add it to `~/.config/opencode/opencode.jsonc`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": ["./plugin/tmux-agent-state.ts"]
-}
-```
-
-</details>
-
-Restart opencode (config and plugins load at startup, not hot-reloaded).
-
-The plugin maps `session.status` → working/idle, `permission.asked` → waiting, `permission.replied` → working, and the `question` tool → waiting until you answer. A blocked turn stays ✋ even if the session reports itself busy while it waits for you.
 
 ## How it works
 
-Each event runs `tmux set -p <option> <state>` on its own pane (`$TMUX_PANE`; the writes are no-ops outside tmux). The window format loops the window's panes with `#{P:…}` and maps the option to an icon, so a window with two agent panes shows two icons side by side, followed by a single space. Pane options are freed when the pane closes.
+Each integration writes a pane-local tmux option (`@claude_state`, `@codex_state`, or `@opencode_state`). The tmux plugin turns those values into icons in the window list, including multiple agent panes in one window.
 
-**Headless Claude sessions.** A `claude -p` launched from a hook (a session journal, say) inherits `$TMUX_PANE`, and its own hooks would otherwise flip the tab to 🧠. Claude Code sets `CLAUDE_CODE_ENTRYPOINT=cli` only for interactive sessions (`sdk-cli` for `-p`, `sdk-*` for the SDKs), so `tmux-claude-state.sh` routes non-interactive sessions to a second option, `@claude_post`. The two sessions never write the same key, which is what makes parallel `SessionEnd` hooks safe without any read-modify-write. The format shows the interactive state when present and 🔄 otherwise. Consequence: a `claude -p` you type by hand also shows 🔄.
-
-**Why not tmux `monitor-*` flags?** They are close (bell ≈ waiting, activity ≈ working, silence ≈ idle) but they mean "unseen", so tmux clears them when you look at the window, and the bell cannot tell a permission prompt from an idle nudge. Agent events are the only exact source.
-
-## Crash safety
-
-`SessionEnd` clears the option, but a killed agent cannot. To clear every key whenever the shell gets its prompt back, add to `.zshrc`:
-
-```zsh
-autoload -Uz add-zsh-hook
-_tmux_agent_state_clear() { [[ -n $TMUX_PANE ]] && tmux set -pu -t "$TMUX_PANE" @claude_state \; set -pu -t "$TMUX_PANE" @claude_post \; set -pu -t "$TMUX_PANE" @codex_state \; set -pu -t "$TMUX_PANE" @opencode_state 2>/dev/null; return 0 }
-add-zsh-hook precmd _tmux_agent_state_clear
-```
-
-## Alignment
-
-The post-processing icon is 🔄 (`U+1F504`), a plain double-width emoji like the rest. An earlier version used ♻️ (`U+267B U+FE0F`); the trailing variation selector made tmux and the terminal disagree on its width, so it could render blank or shift the tab until a redraw. If your terminal still mishandles any of these, swap the emoji for a single-cell glyph or colour the tab name instead, e.g. `#{?#{==:#{@claude_state},waiting},#[fg=yellow],}`.
-
-## Alternatives
-
-[tmux-tab-pulse](https://github.com/rafaelsales/tmux-tab-pulse) (TPM, spinner, marks any busy process, background daemon), [tmux-agent-indicator](https://github.com/accessd/tmux-agent-indicator) (TPM, Claude + Codex + OpenCode, pane borders), [partner0/tmux-agent-status](https://github.com/partner0/tmux-agent-status) (same mechanism, renames the window). None distinguish a headless child session from the pane's owner.
+Claude's non-interactive `-p`/SDK sessions use `@claude_post`, so background work cannot overwrite the interactive session's state.

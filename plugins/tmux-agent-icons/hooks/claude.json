@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude idle"}]}],
+    "UserPromptSubmit": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude working"}]}],
+    "PermissionRequest": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude waiting"}]}],
+    "PermissionDenied": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude working"}]}],
+    "PostToolUse": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude working"}]}],
+    "PostToolUseFailure": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude working"}]}],
+    "Elicitation": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude waiting"}]}],
+    "ElicitationResult": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude working"}]}],
+    "Stop": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude idle"}]}],
+    "SessionEnd": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude end"}]}]
+  }
+}
