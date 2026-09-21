@@ -34,12 +34,17 @@ claude plugin install tmux-agent-icons@tmux-agent-icons
 
 ### Codex
 
+Codex removed plugin-provided hooks, so this integration installs a config hooks file plus a helper:
+
 ```sh
-codex plugin marketplace add josephgardner/tmux-agent-icons
-codex plugin add tmux-agent-icons@tmux-agent-icons
+raw=https://raw.githubusercontent.com/josephgardner/tmux-agent-icons/main
+mkdir -p ~/.local/bin ~/.codex
+curl -fsSL "$raw/tmux-agent-state.sh" -o ~/.local/bin/tmux-agent-state
+chmod +x ~/.local/bin/tmux-agent-state
+curl -fsSL "$raw/codex-hooks.json" -o ~/.codex/hooks.json
 ```
 
-Run `/hooks` once to review and trust the plugin hooks.
+Run `/hooks` once to review and trust the hooks.
 
 ### OpenCode
 
