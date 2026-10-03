@@ -1,7 +1,5 @@
 #!/bin/sh
 
-[ -n "${TMUX_PANE:-}" ] || exit 0
-
 agent=$1
 state=$2
 option="@${agent}_state"
@@ -9,8 +7,26 @@ option="@${agent}_state"
 # Keep Claude's non-interactive child sessions separate from the pane owner.
 [ "$agent" != claude ] || [ "${CLAUDE_CODE_ENTRYPOINT:-cli}" = cli ] || option=@claude_post
 
+# Codex sessions run under a shared app-server daemon, and that daemon's
+# TMUX_PANE is frozen at daemon-start time, so it points at whichever pane
+# started the daemon rather than the pane Codex is running in. Recover the real
+# pane by matching the session cwd against panes whose foreground process is
+# codex, falling back to $TMUX_PANE when the match is missing or ambiguous.
+pane=${TMUX_PANE:-}
+if [ "$agent" = codex ]; then
+  session_cwd=$(pwd -P 2>/dev/null)
+  if [ -n "$session_cwd" ]; then
+    matches=$(tmux list-panes -a -F '#{pane_id}|#{pane_current_command}|#{pane_current_path}' 2>/dev/null \
+      | awk -F'|' -v cwd="$session_cwd" '$2 == "codex" && $3 == cwd { print $1 }')
+    count=$(printf '%s\n' "$matches" | grep -c .)
+    [ "$count" -eq 1 ] && pane=$matches
+  fi
+fi
+
+[ -n "$pane" ] || exit 0
+
 if [ "$state" = end ]; then
-  tmux set-option -p -u -t "$TMUX_PANE" "$option" 2>/dev/null || true
+  tmux set-option -p -u -t "$pane" "$option" 2>/dev/null || true
 else
-  tmux set-option -p -t "$TMUX_PANE" "$option" "$state" 2>/dev/null || true
+  tmux set-option -p -t "$pane" "$option" "$state" 2>/dev/null || true
 fi
