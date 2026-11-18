@@ -56,14 +56,14 @@ opencode plugin add 'github:josephgardner/tmux-agent-icons#main::path:opencode'
 
 ## Restore Claude sessions
 
-With [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect), each Claude pane can come back as the same conversation instead of a new one:
+With [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect), each Claude pane can come back as the same conversation instead of a new one. Add `claude` to `@resurrect-processes`, keeping anything you already list there, and set the save hook:
 
 ```tmux
 set -g @resurrect-processes 'claude'
 set -g @resurrect-hook-post-save-layout '~/.tmux/plugins/tmux-agent-icons/tmux-agent-resurrect.sh'
 ```
 
-Adjust the path if TPM installs plugins elsewhere. If you already use that hook, call this script from yours with the same argument. A session is recorded when it starts, so sessions running before you install the Claude plugin are saved as they were launched.
+Adjust the path if TPM installs plugins elsewhere. If you already use that hook, call this script from yours with the same argument. A session is recorded when it starts, so sessions running before you install the Claude plugin are saved as they were launched. A pane restores as `claude --resume <id>`; other flags it was launched with are not kept.
 
 ## How it works
 
@@ -71,4 +71,4 @@ Each integration writes a pane-local tmux option (`@claude_state`, `@codex_state
 
 Claude's non-interactive `-p`/SDK sessions use `@claude_post`, so background work cannot overwrite the interactive session's state.
 
-Interactive Claude sessions also write `@claude_session`, their session id. The resurrect hook saves it into each Claude pane's command as `claude --resume <id>`.
+Interactive Claude sessions also write `@claude_session` and `@claude_transcript`, their session id and transcript path. The resurrect hook saves each Claude pane's command as `claude --resume <id>`, or as plain `claude` when nobody has typed in it yet, since an empty session cannot be resumed.

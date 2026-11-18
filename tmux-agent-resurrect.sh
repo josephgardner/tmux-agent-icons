@@ -6,14 +6,24 @@
 file=$1
 [ -f "$file" ] || exit 0
 
+t=$'\t'
 tmp="$file.agent.$$"
 # First input: live panes and their session ids. Second: the save file.
+# FILENAME, not NR == FNR: if tmux prints nothing, the save file must still pass through.
+# No transcript yet means nobody typed, and `claude --resume` fails on it: save plain `claude`.
+# Headless `claude -p` panes never set the id, so a stale one must not rewrite them.
 awk -F'\t' -v OFS='\t' '
-  NR == FNR { if ($4 != "") sid[$1 SUBSEP $2 SUBSEP $3] = $4; next }
-  $1 == "pane" && $11 ~ /^:claude( |$)/ && (($2 SUBSEP $3 SUBSEP $6) in sid) {
-    $11 = ":claude --resume " sid[$2 SUBSEP $3 SUBSEP $6]
+  FILENAME == ARGV[1] {
+    if ($4 == "") next
+    cmd = "claude --resume " $4
+    if ($5 != "") { if ((getline line < $5) < 0) cmd = "claude"; else close($5) }
+    run[$1, $2, $3] = cmd
+    next
+  }
+  $1 == "pane" && $11 ~ /^:claude( |$)/ && $11 !~ / (-p|--print)( |$)/ && (($2, $3, $6) in run) {
+    $11 = ":" run[$2, $3, $6]
   }
   { print }
-' <(tmux list-panes -a -F '#{session_name}	#{window_index}	#{pane_index}	#{@claude_session}') \
+' <(tmux list-panes -a -F "#{session_name}$t#{window_index}$t#{pane_index}$t#{@claude_session}$t#{@claude_transcript}") \
   "$file" > "$tmp" && mv "$tmp" "$file"
 rm -f "$tmp"

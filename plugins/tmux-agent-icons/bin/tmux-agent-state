@@ -7,15 +7,6 @@ option="@${agent}_state"
 # Keep Claude's non-interactive child sessions separate from the pane owner.
 [ "$agent" != claude ] || [ "${CLAUDE_CODE_ENTRYPOINT:-cli}" = cli ] || option=@claude_post
 
-# `start` is idle plus the session id, which tmux-agent-resurrect.sh saves as
-# `claude --resume <id>`. Claude's hook JSON leads with session_id.
-session=
-if [ "$state" = start ]; then
-  state=idle
-  [ "$option" != @claude_state ] ||
-    session=$(head -c 200 | sed -n 's/^{[[:space:]]*"session_id"[[:space:]]*:[[:space:]]*"\([0-9a-f-]\{36\}\)".*/\1/p')
-fi
-
 # Codex sessions run under a shared app-server daemon, and that daemon's
 # TMUX_PANE is frozen at daemon-start time, so it points at whichever pane
 # started the daemon rather than the pane Codex is running in. Recover the real
@@ -34,10 +25,29 @@ fi
 
 [ -n "$pane" ] || exit 0
 
+# `start` is idle plus the session id and transcript path, which
+# tmux-agent-resurrect.sh saves as `claude --resume <id>`.
+session=
+transcript=
+if [ "$state" = start ]; then
+  state=idle
+  if [ "$option" = @claude_state ]; then
+    input=$(cat)
+    session=$(printf '%s\n' "$input" | sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([0-9a-f-]\{36\}\)".*/\1/p' | head -n 1)
+    transcript=$(printf '%s\n' "$input" | sed -n 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+  fi
+fi
+
 if [ "$state" = end ]; then
   tmux set-option -p -u -t "$pane" "$option" 2>/dev/null || true
-  [ "$option" != @claude_state ] || tmux set-option -p -u -t "$pane" @claude_session 2>/dev/null || true
+  if [ "$option" = @claude_state ]; then
+    tmux set-option -p -u -t "$pane" @claude_session 2>/dev/null || true
+    tmux set-option -p -u -t "$pane" @claude_transcript 2>/dev/null || true
+  fi
 else
   tmux set-option -p -t "$pane" "$option" "$state" 2>/dev/null || true
-  [ -z "$session" ] || tmux set-option -p -t "$pane" @claude_session "$session" 2>/dev/null || true
+  if [ -n "$session" ]; then
+    tmux set-option -p -t "$pane" @claude_session "$session" 2>/dev/null || true
+    tmux set-option -p -t "$pane" @claude_transcript "$transcript" 2>/dev/null || true
+  fi
 fi
