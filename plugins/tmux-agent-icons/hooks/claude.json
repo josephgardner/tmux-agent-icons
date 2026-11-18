@@ -1,6 +1,6 @@
 {
   "hooks": {
-    "SessionStart": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude idle"}]}],
+    "SessionStart": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude start"}]}],
     "UserPromptSubmit": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude working"}]}],
     "PermissionRequest": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude waiting"}]}],
     "PermissionDenied": [{"hooks":[{"type":"command","command":"sh \"${CLAUDE_PLUGIN_ROOT}/bin/tmux-agent-state\" claude working"}]}],
